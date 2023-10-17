@@ -95,17 +95,18 @@ cargo bench --features ntrup1277
 ```
 ## Keys Generation:
 ```rust
-let mut rng = NTRURandom::new();
-let f: Rq = Rq::from(rng.short_random().unwrap());
+let mut rng = rand::thread_rng();
 let mut g: R3;
+let f: Rq = Rq::from(short_random(&mut rng).unwrap());
 let sk = loop {
-    g = R3::from(rng.random_small().unwrap());
+    g = R3::from(random_small(&mut rng));
 
     match PrivKey::compute(&f, &g) {
         Ok(s) => break s,
         Err(_) => continue,
     };
 };
+let pk = PubKey::compute(&f, &g).unwrap();
 
 let pk = PubKey::compute(&f, &g).unwrap();
 let imported_pk = PubKey::from_sk(&sk).unwrap();
@@ -124,15 +125,15 @@ use ntrulp::ntru::cipher::{
     bytes_decrypt, parallel_bytes_decrypt, parallel_bytes_encrypt, 
 };
 use ntrulp::ntru::errors::NTRUErrors;
-use ntrulp::random::{CommonRandom, NTRURandom};
+use ntrulp::random::{random_small, short_random};
 
 
 fn gen_keys<'a>() -> Result<(Arc<PrivKey>, Arc<PubKey>), NTRUErrors<'a>> {
-    let mut rng = NTRURandom::new();
+    let mut rng = rand::thread_rng();
     let mut g: R3;
-    let f: Rq = Rq::from(rng.short_random().unwrap());
+    let f: Rq = Rq::from(short_random(&mut rng).unwrap());
     let sk = loop {
-        g = R3::from(rng.random_small().unwrap());
+        g = R3::from(random_small(&mut rng));
 
         match PrivKey::compute(&f, &g) {
             Ok(s) => break s,
@@ -144,8 +145,11 @@ fn gen_keys<'a>() -> Result<(Arc<PrivKey>, Arc<PubKey>), NTRUErrors<'a>> {
     Ok((Arc::new(sk), Arc::new(pk)))
 }
 
-let mut rng = NTRURandom::new();
-let bytes = Arc::new(rng.randombytes::<1024>().to_vec());
+let mut rng = rand::thread_rng();
+let mut bytes = [0u8; 1024];
+rng.fill_bytes(&mut bytes);
+let bytes = Arc::new(bytes.to_vec());
+
 let (sk, pk) = gen_keys().unwrap();
 
 let num_threads = 4;
