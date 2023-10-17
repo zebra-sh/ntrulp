@@ -33,15 +33,16 @@ impl PubKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::pub_key::PubKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
-    /// let g3 = R3::from(random.random_small().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
+    /// let g3 = R3::from(random_small(&mut rng));
     /// // Compute the public key
     /// let pub_key = PubKey::compute(&fq, &g3).unwrap();
     /// ```
@@ -70,16 +71,17 @@ impl PubKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::pub_key::PubKey;
     /// use ntrulp::key::priv_key::PrivKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
-    /// let g3 = R3::from(random.random_small().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
+    /// let g3 = R3::from(random_small(&mut rng));
     /// let priv_key = PrivKey::compute(&fq, &g3).unwrap();
     /// let load_from_sk = PubKey::from_sk(&priv_key);
     /// ```
@@ -111,15 +113,16 @@ impl PubKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::pub_key::PubKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
-    /// let g3 = R3::from(random.random_small().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
+    /// let g3 = R3::from(random_small(&mut rng));
     /// // Compute the public key
     /// let pub_key = PubKey::compute(&fq, &g3).unwrap();
     /// let imported_pub_key = PubKey::import(&pub_key.as_bytes()).unwrap();
@@ -147,15 +150,16 @@ impl PubKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::pub_key::PubKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
-    /// let g3 = R3::from(random.random_small().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
+    /// let g3 = R3::from(random_small(&mut rng));
     /// // Compute the public key
     /// let pub_key = PubKey::compute(&fq, &g3).unwrap();
     /// let imported_pub_key = PubKey::import(&pub_key.as_bytes()).unwrap();

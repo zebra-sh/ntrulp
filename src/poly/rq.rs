@@ -106,12 +106,13 @@ impl Rq {
     /// # Example
     ///
     /// ```
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
     /// const RATIO: i16 = 1;
-    /// let mut random: NTRURandom = NTRURandom::new();
-    /// let rq: Rq = Rq::from(random.short_random().unwrap());
+    /// let mut rng = rand::thread_rng();
+    /// let rq: Rq = Rq::from(short_random(&mut rng).unwrap());
     /// let out = rq.recip::<RATIO>().unwrap();
     /// let h = out.mult_r3(&rq.r3_from_rq());
     ///
@@ -230,9 +231,10 @@ impl Rq {
     /// use ntrulp::params::params857::P;
     /// #[cfg(feature = "ntrup953")]
     /// use ntrulp::params::params953::P;
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
+    /// use rand::RngCore;
     ///
+    /// let mut rng = rand::thread_rng();
     /// let rq: Rq = Rq::from([1_i16; P]);
     /// let out = rq.mult_int(3);
     ///

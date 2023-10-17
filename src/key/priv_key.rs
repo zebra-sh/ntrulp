@@ -29,18 +29,20 @@ impl PrivKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::priv_key::PrivKey;
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
+    ///
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
     /// let mut g3: R3;
     /// // Compute the private key
     /// let priv_key = loop {
-    ///     g3 = R3::from(random.random_small().unwrap());
+    ///     g3 = R3::from(random_small(&mut rng));
     ///     match PrivKey::compute(&fq, &g3) {
     ///         Ok(s) => break s,
     ///         Err(_) => continue,
@@ -68,18 +70,19 @@ impl PrivKey {
     /// # Example
     ///
     /// ```
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::priv_key::PrivKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
     /// let mut g3: R3;
     /// // Compute the private key
     /// let priv_key = loop {
-    ///     g3 = R3::from(random.random_small().unwrap());
+    ///     g3 = R3::from(random_small(&mut rng));
     ///     match PrivKey::compute(&fq, &g3) {
     ///         Ok(s) => break s,
     ///         Err(_) => continue,
@@ -115,18 +118,19 @@ impl PrivKey {
     /// # Example
     ///
     /// ```rust
-    /// use ntrulp::random::{CommonRandom, NTRURandom};
     /// use ntrulp::poly::rq::Rq;
     /// use ntrulp::poly::r3::R3;
     /// use ntrulp::key::priv_key::PrivKey;
+    /// use rand::RngCore;
+    /// use ntrulp::random::{random_small, short_random};
     ///
-    /// let mut random: NTRURandom = NTRURandom::new();
+    /// let mut rng = rand::thread_rng();
     /// // Create an Fq polynomial fq and a g3 polynomial g3
-    /// let fq = Rq::from(random.short_random().unwrap());
+    /// let fq = Rq::from(short_random(&mut rng).unwrap());
     /// let mut g3: R3;
     /// // Compute the private key
     /// let priv_key = loop {
-    ///     g3 = R3::from(random.random_small().unwrap());
+    ///     g3 = R3::from(random_small(&mut rng));
     ///     match PrivKey::compute(&fq, &g3) {
     ///         Ok(s) => break s,
     ///         Err(_) => continue,

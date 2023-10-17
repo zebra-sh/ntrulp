@@ -1,13 +1,13 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ntrulp::poly::r3::R3;
 use ntrulp::poly::rq::Rq;
-use ntrulp::random::{CommonRandom, NTRURandom};
+use ntrulp::random::{random_small, short_random};
 
 fn encoder_benchmark(cb: &mut Criterion) {
-    let mut rng = NTRURandom::new();
-    let coeffs = rng.short_random().unwrap();
+    let mut rng = rand::thread_rng();
+    let coeffs = short_random(&mut rng).unwrap();
     let rq = Rq::from(coeffs);
-    let r3 = R3::from(rng.random_small().unwrap());
+    let r3 = R3::from(random_small(&mut rng));
 
     cb.bench_function("rq_recip_1", |b| {
         b.iter(|| {

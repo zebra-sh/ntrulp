@@ -94,20 +94,21 @@ fn pack_bytes(mut bytes: Vec<u8>, size: Vec<usize>, seed: u64) -> Vec<u8> {
 /// # Example
 ///
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::ntru::cipher::rq_decrypt;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate the ciphertext polynomial c and the private key
-/// let c = Rq::from(random.short_random().unwrap());
+/// let c = Rq::from(short_random(&mut rng).unwrap());
 /// let priv_key = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break s,
 ///         Err(_) => continue,
@@ -160,24 +161,25 @@ pub fn rq_decrypt(c: &Rq, priv_key: &PrivKey) -> R3 {
 /// # Example
 ///
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::ntru::cipher::rq_decrypt;
 /// use ntrulp::ntru::cipher::r3_encrypt;
 /// use ntrulp::key::pub_key::PubKey;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate an content for encrypt
-/// let r: R3 = Rq::from(random.short_random().unwrap()).r3_from_rq();
+/// let r: R3 = Rq::from(short_random(&mut rng).unwrap()).r3_from_rq();
 ///
 /// // Generate the private key priv_key
 /// let priv_key = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break s,
 ///         Err(_) => continue,
@@ -187,6 +189,8 @@ pub fn rq_decrypt(c: &Rq, priv_key: &PrivKey) -> R3 {
 ///
 /// let encrypted = r3_encrypt(&r, &pub_key);
 /// let decrypted = rq_decrypt(&encrypted, &priv_key);
+///
+/// assert_eq!(decrypted.coeffs, r.coeffs);
 /// ```
 ///
 /// # Notes
@@ -216,21 +220,22 @@ pub fn r3_encrypt(r: &R3, pub_key: &PubKey) -> Rq {
 ///
 /// # Example
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::ntru::cipher::bytes_encrypt;
 /// use ntrulp::ntru::cipher::bytes_decrypt;
 /// use ntrulp::key::pub_key::PubKey;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate the private key priv_key
 /// let sk = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break s,
 ///         Err(_) => continue,
@@ -238,11 +243,15 @@ pub fn r3_encrypt(r: &R3, pub_key: &PubKey) -> Rq {
 /// };
 ///
 /// // Generate an content for encrypt
-/// let ciphertext = random.randombytes::<123>();
+///
+/// let mut ciphertext = [0u8; 123];
+/// rng.fill_bytes(&mut ciphertext);
 ///
 /// let pk = PubKey::from_sk(&sk).unwrap();
-/// let encrypted = bytes_encrypt(&mut random, &ciphertext, &pk);
+/// let encrypted = bytes_encrypt(&mut rng, &ciphertext.to_vec(), &pk);
 /// let decrypted = bytes_decrypt(&encrypted, &sk).unwrap();
+///
+/// assert_eq!(decrypted, ciphertext.to_vec());
 /// ```
 ///
 /// # Panics
@@ -279,21 +288,22 @@ pub fn bytes_encrypt<R: RngCore>(rng: &mut R, bytes: &[u8], pub_key: &PubKey) ->
 /// # Example
 ///
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::ntru::cipher::bytes_encrypt;
 /// use ntrulp::ntru::cipher::bytes_decrypt;
 /// use ntrulp::key::pub_key::PubKey;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate the private key priv_key
 /// let sk = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break s,
 ///         Err(_) => continue,
@@ -301,11 +311,15 @@ pub fn bytes_encrypt<R: RngCore>(rng: &mut R, bytes: &[u8], pub_key: &PubKey) ->
 /// };
 ///
 /// // Generate an content for encrypt
-/// let ciphertext = random.randombytes::<123>();
+///
+/// let mut ciphertext = [0u8; 123];
+/// rng.fill_bytes(&mut ciphertext);
 ///
 /// let pk = PubKey::from_sk(&sk).unwrap();
-/// let encrypted = bytes_encrypt(&mut random, &ciphertext, &pk);
+/// let encrypted = bytes_encrypt(&mut rng, &ciphertext.to_vec(), &pk);
 /// let decrypted = bytes_decrypt(&encrypted, &sk).unwrap();
+///
+/// assert_eq!(decrypted, ciphertext.to_vec());
 /// ```
 ///
 /// # Panics
@@ -355,23 +369,24 @@ pub fn bytes_decrypt<'a>(bytes: &[u8], priv_key: &PrivKey) -> Result<Vec<u8>, NT
 /// # Example
 ///
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::key::pub_key::PubKey;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
 /// use ntrulp::ntru::cipher::parallel_bytes_encrypt;
 /// use ntrulp::ntru::cipher::parallel_bytes_decrypt;
 /// use std::sync::Arc;
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate the private key priv_key
 /// let sk = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break Arc::new(s),
 ///         Err(_) => continue,
@@ -379,13 +394,15 @@ pub fn bytes_decrypt<'a>(bytes: &[u8], priv_key: &PrivKey) -> Result<Vec<u8>, NT
 /// };
 ///
 /// // Generate an content for encrypt
-/// let ciphertext = Arc::new(random.randombytes::<128>().to_vec());
+/// let mut ciphertext = [0u8; 123];
+/// rng.fill_bytes(&mut ciphertext);
+/// let ciphertext = Arc::new(ciphertext.to_vec());
 ///
 /// // set nums threads
 /// let num_threads = 2;
 /// let pk = Arc::new(PubKey::compute(&f, &g).unwrap());
 /// let encrypted =
-///    Arc::new(parallel_bytes_encrypt(&mut random, &ciphertext, &pk, num_threads).unwrap());
+///    Arc::new(parallel_bytes_encrypt(&mut rng, &ciphertext, &pk, num_threads).unwrap());
 /// let decrypted = parallel_bytes_decrypt(&encrypted, &sk, num_threads).unwrap();
 
 /// assert_eq!(decrypted, ciphertext.to_vec());
@@ -490,23 +507,24 @@ pub fn parallel_bytes_encrypt<'a, R: RngCore>(
 /// # Example
 ///
 /// ```rust
+/// use rand::RngCore;
 /// use ntrulp::key::priv_key::PrivKey;
 /// use ntrulp::poly::rq::Rq;
 /// use ntrulp::poly::r3::R3;
 /// use ntrulp::key::pub_key::PubKey;
-/// use ntrulp::random::{CommonRandom, NTRURandom};
+/// use ntrulp::random::{random_small, short_random};
 ///
 /// use ntrulp::ntru::cipher::parallel_bytes_encrypt;
 /// use ntrulp::ntru::cipher::parallel_bytes_decrypt;
 /// use std::sync::Arc;
 ///
-/// let mut random: NTRURandom = NTRURandom::new();
-/// let f = Rq::from(random.short_random().unwrap());
+/// let mut rng = rand::thread_rng();
+/// let f = Rq::from(short_random(&mut rng).unwrap());
 /// let mut g: R3;
 ///
 /// // Generate the private key priv_key
 /// let sk = loop {
-///     g = R3::from(random.random_small().unwrap());
+///     g = R3::from(random_small(&mut rng));
 ///     match PrivKey::compute(&f, &g) {
 ///         Ok(s) => break Arc::new(s),
 ///         Err(_) => continue,
@@ -514,13 +532,15 @@ pub fn parallel_bytes_encrypt<'a, R: RngCore>(
 /// };
 ///
 /// // Generate an content for encrypt
-/// let ciphertext = Arc::new(random.randombytes::<128>().to_vec());
+/// let mut ciphertext = [0u8; 123];
+/// rng.fill_bytes(&mut ciphertext);
+/// let ciphertext = Arc::new(ciphertext.to_vec());
 ///
 /// // set nums threads
 /// let num_threads = 2;
 /// let pk = Arc::new(PubKey::compute(&f, &g).unwrap());
 /// let encrypted =
-///    Arc::new(parallel_bytes_encrypt(&mut random, &ciphertext, &pk, num_threads).unwrap());
+///    Arc::new(parallel_bytes_encrypt(&mut rng, &ciphertext, &pk, num_threads).unwrap());
 /// let decrypted = parallel_bytes_decrypt(&encrypted, &sk, num_threads).unwrap();
 
 /// assert_eq!(decrypted, ciphertext.to_vec());

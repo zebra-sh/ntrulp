@@ -9,13 +9,14 @@ use ntrulp::ntru::cipher::{
 };
 use ntrulp::poly::r3::R3;
 use ntrulp::poly::rq::Rq;
-use ntrulp::random::{CommonRandom, NTRURandom};
+use ntrulp::random::{random_small, short_random};
+use rand::RngCore;
 
 fn encoder_benchmark(cb: &mut Criterion) {
-    let mut rng = NTRURandom::new();
-    let r: R3 = Rq::from(rng.short_random().unwrap()).r3_from_rq();
-    let f: Rq = Rq::from(rng.short_random().unwrap());
-    let g: R3 = R3::from(rng.random_small().unwrap());
+    let mut rng = rand::thread_rng();
+    let r: R3 = Rq::from(short_random(&mut rng).unwrap()).r3_from_rq();
+    let f: Rq = Rq::from(short_random(&mut rng).unwrap());
+    let g: R3 = R3::from(random_small(&mut rng));
     let sk = PrivKey::compute(&f, &g).unwrap();
     let pk = PubKey::compute(&f, &g).unwrap();
     let enc = r3_encrypt(&r, &pk);
@@ -31,8 +32,10 @@ fn encoder_benchmark(cb: &mut Criterion) {
         });
     });
 
-    let mut rng1 = NTRURandom::new();
-    let ciphertext = rng.randombytes::<1024>();
+    let mut rng1 = rand::thread_rng();
+
+    let mut ciphertext = [0u8; 1024];
+    rng.fill_bytes(&mut ciphertext);
     let cipher = bytes_encrypt(&mut rng1, &ciphertext, &pk);
 
     cb.bench_function("bytes_encrypt", |b| {
@@ -49,12 +52,14 @@ fn encoder_benchmark(cb: &mut Criterion) {
     extern crate num_cpus;
 
     let num_threads = num_cpus::get();
-    let mut rng2 = NTRURandom::new();
+    let mut rng2 = rand::thread_rng();
 
     let sk = Arc::new(sk);
     let pk = Arc::new(pk);
 
-    let ciphertext = Arc::new(rng.randombytes::<1024>().to_vec());
+    let mut ciphertext = [0u8; 1024];
+    rng.fill_bytes(&mut ciphertext);
+    let ciphertext = Arc::new(ciphertext.to_vec());
     let cipher =
         Arc::new(parallel_bytes_encrypt(&mut rng2, &ciphertext, &pk, num_threads).unwrap());
 
