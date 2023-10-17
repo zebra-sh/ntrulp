@@ -2,17 +2,17 @@ use ntrulp::key::priv_key::PrivKey;
 use ntrulp::key::pub_key::PubKey;
 use ntrulp::poly::r3::R3;
 use ntrulp::poly::rq::Rq;
-use ntrulp::random::{CommonRandom, NTRURandom};
+use ntrulp::random::{random_small, short_random};
 
 fn main() {
-    let mut rng = NTRURandom::new();
-    let f: Rq = Rq::from(rng.short_random().unwrap());
+    let mut rng = rand::thread_rng();
+    let f: Rq = Rq::from(short_random(&mut rng).unwrap());
     let mut g: R3;
     let sk = loop {
         // use a loop because there are no guarantees that
         // the random number generator will produce the correct
         // combination that can enter and combine with f.
-        g = R3::from(rng.random_small().unwrap());
+        g = R3::from(random_small(&mut rng));
 
         match PrivKey::compute(&f, &g) {
             Ok(s) => break s,

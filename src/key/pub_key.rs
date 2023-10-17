@@ -173,16 +173,15 @@ impl PubKey {
 #[cfg(test)]
 mod test_pub_key {
     use super::*;
-    use crate::random::CommonRandom;
-    use crate::random::NTRURandom;
+    use crate::random::{random_small, short_random};
 
     #[test]
     fn test_import_export() {
-        let mut random: NTRURandom = NTRURandom::new();
+        let mut rng = rand::thread_rng();
 
         for _ in 0..1 {
-            let f: Rq = Rq::from(random.short_random().unwrap());
-            let g: R3 = R3::from(random.random_small().unwrap());
+            let f: Rq = Rq::from(short_random(&mut rng).unwrap());
+            let g: R3 = R3::from(random_small(&mut rng));
             let pub_key = PubKey::compute(&f, &g).unwrap();
             let bytes = pub_key.as_bytes();
             let new_pub_key = match PubKey::import(&bytes) {
@@ -196,12 +195,12 @@ mod test_pub_key {
 
     #[test]
     fn test_from_sk() {
-        let mut random: NTRURandom = NTRURandom::new();
-        let f: Rq = Rq::from(random.short_random().unwrap());
+        let mut rng = rand::thread_rng();
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
         let mut g: R3;
 
         let sk = loop {
-            g = R3::from(random.random_small().unwrap());
+            g = R3::from(random_small(&mut rng));
 
             match PrivKey::compute(&f, &g) {
                 Ok(s) => break s,

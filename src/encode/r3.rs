@@ -1,3 +1,5 @@
+use rand::{Rng, RngCore};
+
 #[cfg(feature = "ntrup1013")]
 use crate::params::params1013::{DIFFICULT, P, R3_BYTES, W};
 #[cfg(feature = "ntrup1277")]
@@ -12,8 +14,7 @@ use crate::params::params857::{DIFFICULT, P, R3_BYTES, W};
 use crate::params::params953::{DIFFICULT, P, R3_BYTES, W};
 
 use crate::encode::shuffle::{shuffle_array, unshuffle_array};
-use crate::random::CommonRandom;
-use crate::random::NTRURandom;
+use crate::random::random_sign;
 
 pub const BITS_SIZE: usize = 6;
 const EMPTY: [i8; BITS_SIZE] = [0i8; BITS_SIZE];
@@ -143,10 +144,10 @@ pub fn r3_merge_w_chunks(chunks: &[[i8; P]], size: &[usize], seed: u64) -> Vec<i
     out
 }
 
-pub fn r3_split_w_chunks(input: &[i8], rng: &mut NTRURandom) -> (Vec<[i8; P]>, Vec<usize>, u64) {
+pub fn r3_split_w_chunks<R: RngCore>(input: &[i8], rng: &mut R) -> (Vec<[i8; P]>, Vec<usize>, u64) {
     const LIMIT: usize = W - DIFFICULT;
 
-    let origin_seed = rng.random_u64() - (input.len() / P) as u64;
+    let origin_seed = rng.gen::<u64>() - (input.len() / P) as u64;
     let mut seed = origin_seed;
     let mut chunks: Vec<[i8; P]> = Vec::new();
     let mut size: Vec<usize> = Vec::new();
@@ -172,7 +173,7 @@ pub fn r3_split_w_chunks(input: &[i8], rng: &mut NTRURandom) -> (Vec<[i8; P]>, V
         size.push(part_ptr);
 
         while sum != W {
-            let value = rng.random_sign();
+            let value = random_sign(rng);
 
             part[part_ptr] = value;
             sum += 1;
@@ -194,8 +195,7 @@ pub fn r3_split_w_chunks(input: &[i8], rng: &mut NTRURandom) -> (Vec<[i8; P]>, V
 #[cfg(test)]
 mod r3_encoder_tests {
     use super::*;
-    use crate::random::CommonRandom;
-    use crate::random::NTRURandom;
+    use crate::random::random_small;
     use rand::Rng;
 
     #[test]
@@ -212,8 +212,8 @@ mod r3_encoder_tests {
 
     #[test]
     fn test_r3_encode() {
-        let mut random: NTRURandom = NTRURandom::new();
-        let r3: [i8; P] = random.random_small().unwrap();
+        let mut rng = rand::thread_rng();
+        let r3: [i8; P] = random_small(&mut rng);
         let bytes = r3_encode(&r3);
         let dec = r3_decode(&bytes);
 
@@ -236,13 +236,12 @@ mod r3_encoder_tests {
     #[test]
     fn test_encode_decode_bytes_by_chunks_spliter_merge() {
         let mut rng = rand::thread_rng();
-        let mut random: NTRURandom = NTRURandom::new();
 
         for _ in 0..100 {
             let rand_len = rng.gen_range(5..1000);
             let bytes: Vec<u8> = (0..rand_len).map(|_| rng.gen::<u8>()).collect();
             let r3 = r3_decode_chunks(&bytes);
-            let (chunks, size, seed) = r3_split_w_chunks(&r3, &mut random);
+            let (chunks, size, seed) = r3_split_w_chunks(&r3, &mut rng);
             let merged = r3_merge_w_chunks(&chunks, &size, seed);
 
             let mut r3_sum = 0usize;
@@ -266,13 +265,12 @@ mod r3_encoder_tests {
     #[test]
     fn test_spliter() {
         let mut rng = rand::thread_rng();
-        let mut random: NTRURandom = NTRURandom::new();
 
         for _ in 0..10 {
             let rand_len = rng.gen_range(5..1000);
             let bytes: Vec<u8> = (0..rand_len).map(|_| rng.gen::<u8>()).collect();
             let r3 = r3_decode_chunks(&bytes);
-            let (chunks, size, _) = r3_split_w_chunks(&r3, &mut random);
+            let (chunks, size, _) = r3_split_w_chunks(&r3, &mut rng);
 
             for (chunk, index) in chunks.iter().zip(size) {
                 let sum = chunk.iter().map(|&x| x.abs() as i32).sum::<i32>();

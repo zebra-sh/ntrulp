@@ -161,16 +161,15 @@ impl PrivKey {
 #[cfg(test)]
 mod test_private_key {
     use super::*;
-    use crate::random::CommonRandom;
-    use crate::random::NTRURandom;
+    use crate::random::{random_small, short_random};
 
     #[test]
     fn test_import_export() {
-        let mut random: NTRURandom = NTRURandom::new();
+        let mut rng = rand::thread_rng();
 
         for _ in 0..2 {
-            let f: Rq = Rq::from(random.short_random().unwrap());
-            let g: R3 = R3::from(random.random_small().unwrap());
+            let f: Rq = Rq::from(short_random(&mut rng).unwrap());
+            let g: R3 = R3::from(random_small(&mut rng));
             let secret_key = match PrivKey::compute(&f, &g) {
                 Ok(sk) => sk,
                 Err(_) => continue,

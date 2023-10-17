@@ -45,17 +45,14 @@ pub fn decode(input: &[u8; RQ_BYTES]) -> [i16; P] {
 #[cfg(test)]
 mod tests_fq {
     use super::*;
-    use crate::{
-        poly::rq::Rq,
-        random::{CommonRandom, NTRURandom},
-    };
+    use crate::{poly::rq::Rq, random::short_random};
 
     #[test]
     fn test_encode_decode() {
-        let mut rng = NTRURandom::new();
+        let mut rng = rand::thread_rng();
 
         for _ in 0..100 {
-            let coeffs = rng.short_random().unwrap();
+            let coeffs = short_random(&mut rng).unwrap();
             let rq = Rq::from(coeffs);
 
             let bytes = encode(&rq.coeffs);

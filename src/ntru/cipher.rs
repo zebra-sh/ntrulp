@@ -1,15 +1,17 @@
+use rand::RngCore;
+
 #[cfg(feature = "ntrup1013")]
-use crate::params::params1013::{P, RQ_BYTES, W};
+use crate::params::params1013::{P, R3_BYTES, RQ_BYTES, W};
 #[cfg(feature = "ntrup1277")]
-use crate::params::params1277::{P, RQ_BYTES, W};
+use crate::params::params1277::{P, R3_BYTES, RQ_BYTES, W};
 #[cfg(feature = "ntrup653")]
-use crate::params::params653::{P, RQ_BYTES, W};
+use crate::params::params653::{P, R3_BYTES, RQ_BYTES, W};
 #[cfg(feature = "ntrup761")]
-use crate::params::params761::{P, RQ_BYTES, W};
+use crate::params::params761::{P, R3_BYTES, RQ_BYTES, W};
 #[cfg(feature = "ntrup857")]
-use crate::params::params857::{P, RQ_BYTES, W};
+use crate::params::params857::{P, R3_BYTES, RQ_BYTES, W};
 #[cfg(feature = "ntrup953")]
-use crate::params::params953::{P, RQ_BYTES, W};
+use crate::params::params953::{P, R3_BYTES, RQ_BYTES, W};
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -18,7 +20,6 @@ use std::thread;
 use crate::encode::{r3, rq};
 use crate::key::priv_key::PrivKey;
 use crate::key::pub_key::PubKey;
-use crate::random::NTRURandom;
 use crate::{
     math::nums::weightw_mask,
     poly::{f3::round, r3::R3, rq::Rq},
@@ -54,6 +55,10 @@ fn unpack_bytes<'a>(bytes: &[u8]) -> Result<(Vec<u8>, Vec<usize>, u64), NTRUErro
     };
     let size_len = usize::from_ne_bytes(size_bytes_len);
     let seed = u64::from_ne_bytes(seed_bytes);
+
+    if bytes_len < size_len || (bytes_len / size_len) < R3_BYTES {
+        return Err(NTRUErrors::SipherError("Invalid sipher"));
+    }
 
     let size_bytes = &bytes[bytes_len - size_len - 16..(bytes_len - 16)];
     let size = byte_to_usize_vec(size_bytes);
@@ -244,7 +249,7 @@ pub fn r3_encrypt(r: &R3, pub_key: &PubKey) -> Rq {
 ///
 /// The function may panic if encryption fails or if the provided public key is invalid.
 ///
-pub fn bytes_encrypt(rng: &mut NTRURandom, bytes: &[u8], pub_key: &PubKey) -> Vec<u8> {
+pub fn bytes_encrypt<R: RngCore>(rng: &mut R, bytes: &[u8], pub_key: &PubKey) -> Vec<u8> {
     let unlimted_poly = r3::r3_decode_chunks(bytes);
     let (chunks, size, seed) = r3::r3_split_w_chunks(&unlimted_poly, rng);
     let mut bytes: Vec<u8> = Vec::with_capacity(P * size.len());
@@ -391,8 +396,8 @@ pub fn bytes_decrypt<'a>(bytes: &[u8], priv_key: &PrivKey) -> Result<Vec<u8>, NT
 /// The function may panic if encryption fails, the provided public key is invalid,
 /// or if the specified number of threads exceeds the available processor cores.
 ///
-pub fn parallel_bytes_encrypt<'a>(
-    rng: &mut NTRURandom,
+pub fn parallel_bytes_encrypt<'a, R: RngCore>(
+    rng: &mut R,
     bytes: &Arc<Vec<u8>>,
     pub_key: &Arc<PubKey>,
     num_threads: usize,
@@ -617,21 +622,21 @@ pub fn parallel_bytes_decrypt<'a>(
 
 #[cfg(test)]
 mod test_cipher {
+    use crate::random::{random_small, short_random};
+
     use super::*;
-    use crate::random::CommonRandom;
-    use crate::random::NTRURandom;
     use rand::Rng;
 
     #[test]
     fn test_parallel_bytes_cipher() {
+        let mut rng = rand::thread_rng();
         let num_threads = 2;
-        let mut random: NTRURandom = NTRURandom::new();
-
         let mut g: R3;
-        let ciphertext = Arc::new(random.randombytes::<1024>().to_vec());
-        let f: Rq = Rq::from(random.short_random().unwrap());
+        let mut ciphertext = [0u8; 1024];
+        rng.fill_bytes(&mut ciphertext);
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
         let sk = loop {
-            g = R3::from(random.random_small().unwrap());
+            g = R3::from(random_small(&mut rng));
 
             match PrivKey::compute(&f, &g) {
                 Ok(s) => break Arc::new(s),
@@ -639,10 +644,14 @@ mod test_cipher {
             };
         };
         let pk = Arc::new(PubKey::compute(&f, &g).unwrap());
-        let encrypted =
-            Arc::new(parallel_bytes_encrypt(&mut random, &ciphertext, &pk, num_threads).unwrap());
-        let encrypted1 =
-            Arc::new(parallel_bytes_encrypt(&mut random, &ciphertext, &pk, num_threads).unwrap());
+        let encrypted = Arc::new(
+            parallel_bytes_encrypt(&mut rng, &Arc::new(ciphertext.to_vec()), &pk, num_threads)
+                .unwrap(),
+        );
+        let encrypted1 = Arc::new(
+            parallel_bytes_encrypt(&mut rng, &Arc::new(ciphertext.to_vec()), &pk, num_threads)
+                .unwrap(),
+        );
 
         assert_ne!(encrypted, encrypted1);
 
@@ -653,13 +662,13 @@ mod test_cipher {
 
     #[test]
     fn test_bytes_cipher() {
-        let mut random: NTRURandom = NTRURandom::new();
-
+        let mut rng = rand::thread_rng();
         let mut g: R3;
-        let ciphertext = random.randombytes::<1024>();
-        let f: Rq = Rq::from(random.short_random().unwrap());
+        let mut ciphertext = vec![0u8; 1024];
+        rng.fill_bytes(&mut ciphertext);
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
         let sk = loop {
-            g = R3::from(random.random_small().unwrap());
+            g = R3::from(random_small(&mut rng));
 
             match PrivKey::compute(&f, &g) {
                 Ok(s) => break s,
@@ -667,12 +676,12 @@ mod test_cipher {
             };
         };
         let pk = PubKey::compute(&f, &g).unwrap();
-        let mut encrypted = bytes_encrypt(&mut random, &ciphertext, &pk);
-        let encrypted1 = bytes_encrypt(&mut random, &ciphertext, &pk);
+        let mut encrypted = bytes_encrypt(&mut rng, &ciphertext, &pk);
+        let encrypted1 = bytes_encrypt(&mut rng, &ciphertext, &pk);
         assert_ne!(encrypted, encrypted1);
         let decrypted = bytes_decrypt(&encrypted, &sk).unwrap();
 
-        assert_eq!(decrypted, ciphertext);
+        assert_eq!(decrypted, ciphertext.to_vec());
 
         encrypted[2] = 0;
         encrypted[1] = 0;
@@ -683,18 +692,17 @@ mod test_cipher {
 
         let decrypted = bytes_decrypt(&encrypted, &sk).unwrap();
 
-        assert_ne!(decrypted, ciphertext);
+        assert_ne!(decrypted, ciphertext.to_vec());
     }
 
     #[test]
     fn test_encrypt_and_decrypt() {
-        let mut random: NTRURandom = NTRURandom::new();
-
-        let r: R3 = Rq::from(random.short_random().unwrap()).r3_from_rq();
-        let f: Rq = Rq::from(random.short_random().unwrap());
+        let mut rng = rand::thread_rng();
+        let r: R3 = Rq::from(short_random(&mut rng).unwrap()).r3_from_rq();
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
         let mut g: R3;
         let sk = loop {
-            g = R3::from(random.random_small().unwrap());
+            g = R3::from(random_small(&mut rng));
 
             match PrivKey::compute(&f, &g) {
                 Ok(s) => break s,
@@ -716,5 +724,62 @@ mod test_cipher {
         let out = byte_to_usize_vec(&bytes);
 
         assert_eq!(out, usize_list);
+    }
+
+    #[test]
+    fn test_invalid_keys() {
+        let mut rng = rand::thread_rng();
+        let mut g: R3;
+        let mut ciphertext = vec![0u8; 1024];
+        rng.fill_bytes(&mut ciphertext);
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
+        loop {
+            g = R3::from(random_small(&mut rng));
+
+            match PrivKey::compute(&f, &g) {
+                Ok(_) => break,
+                Err(_) => continue,
+            };
+        }
+        let pk = PubKey::compute(&f, &g).unwrap();
+        let invalid_sk = loop {
+            g = R3::from(random_small(&mut rng));
+
+            match PrivKey::compute(&f, &g) {
+                Ok(s) => break s,
+                Err(_) => continue,
+            };
+        };
+        let encrypted = bytes_encrypt(&mut rng, &ciphertext, &pk);
+        let decrypted = bytes_decrypt(&encrypted, &invalid_sk).unwrap();
+
+        assert_ne!(decrypted, ciphertext);
+    }
+
+    #[test]
+    fn test_invalid_bytes_decrypt() {
+        let mut rng = rand::thread_rng();
+        let mut g: R3;
+        let mut invalid_bytes = vec![0u8; 128];
+        rng.fill_bytes(&mut invalid_bytes);
+        let f: Rq = Rq::from(short_random(&mut rng).unwrap());
+        loop {
+            g = R3::from(random_small(&mut rng));
+
+            match PrivKey::compute(&f, &g) {
+                Ok(_) => break,
+                Err(_) => continue,
+            };
+        }
+        let invalid_sk = loop {
+            g = R3::from(random_small(&mut rng));
+
+            match PrivKey::compute(&f, &g) {
+                Ok(s) => break s,
+                Err(_) => continue,
+            };
+        };
+
+        assert!(bytes_decrypt(&invalid_bytes, &invalid_sk).is_err());
     }
 }

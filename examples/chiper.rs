@@ -9,14 +9,15 @@ use ntrulp::ntru::cipher::{
 use ntrulp::ntru::errors::NTRUErrors;
 use ntrulp::poly::r3::R3;
 use ntrulp::poly::rq::Rq;
-use ntrulp::random::{CommonRandom, NTRURandom};
+use ntrulp::random::{random_small, short_random};
+use rand::RngCore;
 
 fn gen_keys<'a>() -> Result<(Arc<PrivKey>, Arc<PubKey>), NTRUErrors<'a>> {
-    let mut rng = NTRURandom::new();
+    let mut rng = rand::thread_rng();
     let mut g: R3;
-    let f: Rq = Rq::from(rng.short_random().unwrap());
+    let f: Rq = Rq::from(short_random(&mut rng).unwrap());
     let sk = loop {
-        g = R3::from(rng.random_small().unwrap());
+        g = R3::from(random_small(&mut rng));
 
         match PrivKey::compute(&f, &g) {
             Ok(s) => break s,
@@ -30,9 +31,12 @@ fn gen_keys<'a>() -> Result<(Arc<PrivKey>, Arc<PubKey>), NTRUErrors<'a>> {
 
 fn main() {
     // create random generator.
-    let mut rng = NTRURandom::new();
+    let mut rng = rand::thread_rng();
 
-    let bytes = Arc::new(rng.randombytes::<1024>().to_vec());
+    let mut bytes = [0u8; 5];
+    rng.fill_bytes(&mut bytes);
+
+    let bytes = Arc::new(bytes.to_vec());
 
     let (sk, pk) = gen_keys().unwrap();
 
@@ -57,7 +61,7 @@ fn main() {
     // or make modify encode and decode algorithms
     //
     // generate a random poly in field F3.
-    let r: R3 = Rq::from(rng.short_random().unwrap()).r3_from_rq();
+    let r: R3 = Rq::from(short_random(&mut rng).unwrap()).r3_from_rq();
 
     // encryption r with pubKey in field Fq
     let cipher_rq = r3_encrypt(&r, &pk);

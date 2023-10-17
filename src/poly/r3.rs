@@ -182,7 +182,7 @@ impl R3 {
 #[cfg(test)]
 mod test_r3 {
     use super::*;
-    use crate::random::{CommonRandom, NTRURandom};
+    use crate::random::random_small;
 
     #[cfg(feature = "ntrup761")]
     #[test]
@@ -289,10 +289,10 @@ mod test_r3 {
 
     #[test]
     fn test_recip() {
-        let mut random: NTRURandom = NTRURandom::new();
+        let mut rng = rand::thread_rng();
 
         for _ in 0..2 {
-            let r3: R3 = R3::from(random.random_small().unwrap());
+            let r3: R3 = R3::from(random_small(&mut rng));
 
             let out = match r3.recip() {
                 Ok(o) => o,

@@ -270,13 +270,17 @@ impl Rq {
 
 #[cfg(test)]
 mod test_rq {
+    use rand::RngCore;
+
     use super::*;
-    use crate::random::{CommonRandom, NTRURandom};
+    use crate::random::short_random;
 
     #[test]
     fn test_mult_int() {
-        let mut random: NTRURandom = NTRURandom::new();
-        let num = random.randombytes::<5>()[2] as i16;
+        let mut rng = rand::thread_rng();
+        let mut bytes = [0u8; 5];
+        rng.fill_bytes(&mut bytes);
+        let num = bytes[2] as i16;
         let rq: Rq = Rq::from([1_i16; P]);
         let out = rq.mult_int(num);
 
@@ -288,8 +292,9 @@ mod test_rq {
     #[test]
     fn test_recip() {
         const RATIO: i16 = 1;
-        let mut random: NTRURandom = NTRURandom::new();
-        let rq: Rq = Rq::from(random.short_random().unwrap());
+
+        let mut rng = rand::thread_rng();
+        let rq: Rq = Rq::from(short_random(&mut rng).unwrap());
         let out = rq.recip::<RATIO>().unwrap();
         let h = out.mult_r3(&rq.r3_from_rq());
 

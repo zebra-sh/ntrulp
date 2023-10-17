@@ -8,4 +8,5 @@ pub enum NTRUErrors<'a> {
     ThreadError(&'a str),
     R3EncodeError(&'a str),
     SliceError(&'a str),
+    SipherError(&'a str),
 }

@@ -29,11 +29,10 @@ pub fn round(a: &mut [i16; P]) {
 #[test]
 fn test_round() {
     use crate::poly::rq::Rq;
-    use crate::random::CommonRandom;
-    use crate::random::NTRURandom;
+    use crate::random::short_random;
 
-    let mut random: NTRURandom = NTRURandom::new();
-    let mut r3: Rq = Rq::from(random.short_random().unwrap())
+    let mut rng = rand::thread_rng();
+    let mut r3: Rq = Rq::from(short_random(&mut rng).unwrap())
         .recip::<3>()
         .unwrap();
 
